@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Discover Sri Lanka's most breathtaking destinations and plan AI-optimized multi-stop trips." />
+  <title>Tripify — Explore Sri Lanka</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Page-transition overlay */
+    .transition-curtain {
+      position: fixed; inset: 0;
+      background: #0a0a0a; z-index: 9999;
+      pointer-events: none; opacity: 0;
+      transition: opacity 0.45s ease;
+    }
+    .transition-curtain.active { opacity: 1; pointer-events: all; }
+
+    /* CTA card in hero-dests strip */
+    .dest-card.cta-card {
+      background: linear-gradient(135deg, rgba(0,201,167,0.18), rgba(74,158,255,0.12));
+      border: 1px solid rgba(0,201,167,0.4);
+      cursor: pointer; text-decoration: none;
+      display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
+      transition: transform 0.3s, background 0.3s, box-shadow 0.3s;
+    }
+    .dest-card.cta-card:hover {
+      transform: translateY(-4px);
+      background: linear-gradient(135deg, rgba(0,201,167,0.30), rgba(74,158,255,0.22));
+      box-shadow: 0 8px 32px rgba(0,201,167,0.2);
+    }
+    .dest-card.cta-card .dc-name { color: #00c9a7; }
+    .dc-arrow { font-size: 1.3rem; margin-top: 6px; color: #00c9a7; transition: transform 0.3s; }
+    .dest-card.cta-card:hover .dc-arrow { transform: translateX(6px); }
+
+    /* Plan-a-trip button soft pulse */
+    .btn-plan-hero { animation: planPulse 2.8s ease-in-out infinite; }
+    @keyframes planPulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(0,201,167,0); }
+      50%      { box-shadow: 0 0 0 10px rgba(0,201,167,0.18); }
+    }
+
+    /* Gallery CTA */
+    .gallery-cta-wrap { text-align:center; margin: 48px 0 32px; }
+  </style>
+</head>
+<body>
+  <div class="cursor-dot"  id="cursorDot"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+  <div class="page-curtain" id="pageCurtain"></div>
+  <div class="transition-curtain" id="transitionCurtain"></div>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero" id="home">
+    <div class="hero-bg" style="background-image:url('hero-bg.jpg')"></div>
+    <div class="hero-overlay"></div>
+    <div class="grid-frame">
+      <div class="gf-v left"></div><div class="gf-v right"></div>
+      <div class="gf-h top"></div><div class="gf-h bottom"></div>
+    </div>
+
+    <nav class="navbar nav-anim">
+      <ul class="nav-links nav-left">
+        <li class="nl-anim nl-1"><a href="#team-section" class="nav-link">About</a></li>
+        <li class="nl-anim nl-2"><a href="#about"        class="nav-link">Why Us</a></li>
+      </ul>
+      <div class="nav-logo logo-anim">
+        <svg class="logo-mountain" viewBox="0 0 60 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M30 6 L54 44 H6 Z" stroke="white" stroke-width="1.5" fill="none"/>
+          <path d="M17 34 L30 16 L43 34" stroke="white" stroke-width="1" fill="none" opacity="0.55"/>
+          <circle cx="30" cy="47" r="1.2" fill="white" opacity="0.6"/>
+        </svg>
+        <span class="logo-brand">Tripify</span>
+        <span class="logo-sub">SRI LANKA</span>
+      </div>
+      <ul class="nav-links nav-right">
+        <li class="nl-anim nl-3"><a href="planner.html" class="nav-link nav-cta go-planner">Plan Now</a></li>
+      </ul>
+      <button class="nav-hamburger" id="navHamburger" aria-label="Menu" aria-expanded="false">
+        <span class="ham-line"></span><span class="ham-line"></span><span class="ham-line"></span>
+      </button>
+    </nav>
+
+    <div class="mobile-drawer" id="mobileDrawer" aria-hidden="true">
+      <div class="mobile-drawer-inner">
+        <a href="#gallery"     class="mob-link" data-close>Discover Places</a>
+        <a href="#about"       class="mob-link" data-close>Why Tripify</a>
+        <a href="#team-section" class="mob-link" data-close>About</a>
+        <a href="planner.html" class="mob-cta go-planner" data-close>Plan Now →</a>
+      </div>
+    </div>
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+
+    <div class="mobile-drawer" id="mobileDrawer" aria-hidden="true">
+      <div class="mobile-drawer-inner">
+        <a href="#gallery"     class="mob-link" data-close>Discover Places</a>
+        <a href="planner.html" class="mob-link go-planner" data-close>Plan My Trip</a>
+        <a href="#about"       class="mob-link" data-close>Why Tripify</a>
+        <a href="planner.html" class="mob-cta  go-planner" data-close>Plan Now →</a>
+      </div>
+    </div>
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+
+    <div class="hero-content">
+      <div class="hero-center">
+        <h1 class="hero-title title-anim">Explore Sri Lanka's<br/><em>Unseen Wonders</em></h1>
+        <p class="hero-sub sub-anim">Plan multi-stop journeys through Sri Lanka's most breathtaking landscapes — AI-optimized routes, traffic-aware timings, and LKR budget planning.</p>
+        <div class="hero-btns">
+          <a href="#gallery"     class="btn-discover btn-discover-anim">Discover <span class="discover-arrow">→</span></a>
+          <a href="planner.html" class="btn-plan-hero go-planner">Plan a Trip <span class="discover-arrow">→</span></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-dests">
+      <div class="dest-card">
+        <div class="dc-region">CENTRAL PROVINCE</div>
+        <div class="dc-name">Sigiriya Rock</div>
+        <div class="dc-rule"></div>
+        <div class="dc-price">From Rs. 4,500</div>
+      </div>
+      <div class="dest-card">
+        <div class="dc-region">UVA PROVINCE</div>
+        <div class="dc-name">Ella Valley</div>
+        <div class="dc-rule"></div>
+        <div class="dc-price">Free · All Trails</div>
+      </div>
+      <div class="dest-card">
+        <div class="dc-region">SOUTHERN COAST</div>
+        <div class="dc-name">Galle Fort</div>
+        <div class="dc-rule"></div>
+        <div class="dc-price">Free Entry</div>
+      </div>
+      <a href="planner.html" class="dest-card cta-card go-planner">
+        <div class="dc-region">START YOUR ADVENTURE</div>
+        <div class="dc-name">Plan Your Trip</div>
+        <div class="dc-rule"></div>
+        <div class="dc-price">AI-Powered Route Planner</div>
+        <div class="dc-arrow">→</div>
+      </a>
+    </div>
+  </section>
+
+  <!-- ===== GALLERY ===== -->
+  <section class="gallery-section reveal-up" id="gallery">
+    <br><br>
+    <div class="gallery-header reveal-up">
+      <div class="gallery-eyebrow">Unmissable Destinations</div>
+      <h2 class="gallery-title">Top Places in <em>Sri Lanka</em></h2>
+      <p class="gallery-sub">Discover the island's most breathtaking spots — from ancient rock fortresses to pristine beaches</p>
+    </div>
+    <div class="gallery-scene">
+      <button class="gallery-btn prev" id="galleryPrev" aria-label="Previous">←</button>
+      <div class="gallery-track" id="galleryTrack"></div>
+      <button class="gallery-btn next" id="galleryNext" aria-label="Next">→</button>
+    </div>
+    <div class="gallery-dots" id="galleryDots"></div>
+    <div class="gallery-cta-wrap">
+      <a href="planner.html" class="btn-plan-hero go-planner" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;">
+        Ready to Visit? Plan Your Route <span>→</span>
+      </a>
+    </div>
+    <br><br>
+  </section>
+
+  <!-- ===== WHY US ===== -->
+  <section class="why-section" id="about">
+    <div class="why-inner">
+      <div class="why-eyebrow reveal-up">Why Choose Us</div>
+      <h2 class="why-title reveal-up">Why <em>Tripify?</em></h2>
+      <div class="why-grid reveal-up">
+        <div class="why-card">
+          <div class="why-cat">AI POWERED</div>
+          <h3 class="why-name">Route Optimization</h3>
+          <div class="why-rule"></div>
+          <p>Analyzes all stops, distances &amp; traffic to find the most efficient Sri Lanka route.</p>
+        </div>
+        <div class="why-card">
+          <div class="why-cat">BUDGET SMART</div>
+          <h3 class="why-name">Budget in LKR</h3>
+          <div class="why-rule"></div>
+          <p>All costs — transport, meals, accommodation — calculated in Sri Lankan Rupees.</p>
+        </div>
+        <div class="why-card">
+          <div class="why-cat">TRAFFIC AWARE</div>
+          <h3 class="why-name">Real-Time Timing</h3>
+          <div class="why-rule"></div>
+          <p>Travel times factor in Sri Lanka's rush hours and real road conditions.</p>
+        </div>
+        <div class="why-card">
+          <div class="why-cat">HAND-PICKED</div>
+          <h3 class="why-name">Smart Recommendations</h3>
+          <div class="why-rule"></div>
+          <p>Curated restaurants, hotels &amp; attractions filtered by budget, proximity, and ratings.</p>
+        </div>
+      </div>
+      <div class="star-rating reveal-up" id="siteRating">
+        <span class="sr-text">Rate our service:</span>
+        <div class="stars">
+          <span class="star" data-val="1">★</span>
+          <span class="star" data-val="2">★</span>
+          <span class="star" data-val="3">★</span>
+          <span class="star" data-val="4">★</span>
+          <span class="star" data-val="5">★</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TEAM ===== -->
+  <section class="team-section" id="team-section">
+    <div class="team-inner">
+      <div class="team-header reveal-up">
+        <div class="team-eyebrow">The Builders</div>
+        <h2 class="team-title">Meet the <em>Team</em></h2>
+        <p class="team-sub">Six passionate developers who built Tripify to make Sri Lanka travel smarter, easier, and unforgettable.</p>
+      </div>
+      <div class="team-grid">
+        <div class="team-card reveal-up"><div class="team-member-pill" style="--ac:#00c9a7">Dineth</div></div>
+        <div class="team-card reveal-up"><div class="team-member-pill" style="--ac:#ffbe3f">Thisara</div></div>
+        <div class="team-card reveal-up"><div class="team-member-pill" style="--ac:#4a9eff">Navindu</div></div>
+        <div class="team-card reveal-up"><div class="team-member-pill" style="--ac:#ff6b9d">Riveen</div></div>
+        <div class="team-card reveal-up"><div class="team-member-pill" style="--ac:#bc7eff">Malindu</div></div>
+        <div class="team-card reveal-up"><div class="team-member-pill" style="--ac:#3fb950">Pansilu</div></div>
+      </div>
+      <div class="tech-block reveal-up">
+        <div class="tech-eyebrow">Built With</div>
+        <div class="tech-pills">
+          <span class="tech-pill">HTML5</span><span class="tech-pill">CSS3</span>
+          <span class="tech-pill">Vanilla JS</span><span class="tech-pill">Google Maps API</span>
+          <span class="tech-pill">Leaflet.js</span><span class="tech-pill">OpenStreetMap</span>
+          <span class="tech-pill">Gemini AI</span><span class="tech-pill">Google Fonts</span>
+          <span class="tech-pill">Unsplash</span><span class="tech-pill">LocalStorage</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="site-footer">
+    <div class="footer-logo">Tripify Sri Lanka</div>
+    <p>AI-powered trip planning for the Pearl of the Indian Ocean.</p>
+    <p class="footer-note">All prices in LKR · Data curated for Sri Lanka travel</p>
+  </footer>
+
+  <div class="toast-container" id="toastContainer"></div>
+  <script src="gallery.js"></script>
+  <script>
+    // Page-load curtain lift
+    window.addEventListener('load', () => {
+      const c = document.getElementById('pageCurtain');
+      if (c) setTimeout(() => c.classList.add('lifted'), 80);
+    });
+
+    // Smooth transition to planner
+    function goToPlanner(e) {
+      e.preventDefault();
+      const curtain = document.getElementById('transitionCurtain');
+      curtain.classList.add('active');
+      setTimeout(() => { window.location.href = 'planner.html'; }, 420);
+    }
+    document.querySelectorAll('.go-planner').forEach(el => el.addEventListener('click', goToPlanner));
+
+    // Mobile hamburger
+    const hamburger = document.getElementById('navHamburger');
+    const drawer    = document.getElementById('mobileDrawer');
+    const mobOverlay = document.getElementById('mobileOverlay');
+    function toggleDrawer(open) {
+      drawer.classList.toggle('open', open);
+      mobOverlay.classList.toggle('open', open);
+      hamburger.setAttribute('aria-expanded', open);
+      document.body.style.overflow = open ? 'hidden' : '';
+    }
+    hamburger?.addEventListener('click',  () => toggleDrawer(!drawer.classList.contains('open')));
+    mobOverlay?.addEventListener('click', () => toggleDrawer(false));
+    document.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', () => toggleDrawer(false)));
+
+    // Star rating
+    document.querySelectorAll('.star').forEach(star => {
+      star.addEventListener('click', function () {
+        const val = +this.dataset.val;
+        document.querySelectorAll('.star').forEach((s, i) => s.classList.toggle('active', i < val));
+      });
+    });
+  </script>
+</body>
+</html>

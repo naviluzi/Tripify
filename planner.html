@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Plan your perfect Sri Lanka multi-stop trip with AI-optimized routes and LKR budget planning." />
+  <title>Tripify — Plan Your Journey</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* ── Planner page top bar ── */
+    .planner-topbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px;
+      height: 64px;
+      background: rgba(8,8,8,0.88);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .ptb-logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; color: white;
+    }
+    .ptb-logo svg { width: 28px; height: 28px; }
+    .ptb-brand { font-family: 'Cormorant Garamond', serif; font-size: 1.25rem; font-weight: 600; letter-spacing: 0.04em; }
+    .ptb-sub   { font-size: 0.6rem; letter-spacing: 0.18em; opacity: 0.45; text-transform: uppercase; margin-left: 2px; }
+
+    .ptb-back {
+      display: flex; align-items: center; gap: 8px;
+      background: none; border: 1px solid rgba(255,255,255,0.18);
+      color: rgba(255,255,255,0.7); font-size: 0.82rem; letter-spacing: 0.06em;
+      padding: 8px 18px; border-radius: 100px; cursor: pointer;
+      transition: color 0.2s, border-color 0.2s, background 0.2s;
+      text-decoration: none;
+    }
+    .ptb-back:hover { color: white; border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.06); }
+    .ptb-back svg { width: 14px; height: 14px; }
+
+    .ptb-right { display: flex; align-items: center; gap: 16px; }
+
+    /* Push planner content below topbar */
+    .planner-page-wrap { padding-top: 80px; }
+
+    /* ── Planner page hero banner ── */
+    .planner-hero-banner {
+      background: linear-gradient(135deg, #0d1a1a 0%, #080808 60%);
+      padding: 60px 40px 52px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .planner-hero-banner::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 70% 60% at 50% 120%, rgba(0,201,167,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .phb-badge {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase;
+      color: #00c9a7; border: 1px solid rgba(0,201,167,0.35);
+      padding: 5px 14px; border-radius: 100px; margin-bottom: 20px;
+    }
+    .phb-dot { width: 6px; height: 6px; background: #00c9a7; border-radius: 50%; animation: blink 1.6s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .phb-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 500; color: white; margin-bottom: 12px; line-height: 1.15;
+    }
+    .phb-title em { font-style: italic; color: #00c9a7; }
+    .phb-sub {
+      font-size: 0.95rem; color: rgba(255,255,255,0.5);
+      max-width: 540px; margin: 0 auto; line-height: 1.7;
+    }
+
+    /* ── Steps indicator ── */
+    .planner-steps {
+      display: flex; align-items: center; justify-content: center; gap: 0;
+      padding: 28px 40px 0;
+      max-width: 600px; margin: 0 auto;
+    }
+    .ps-step {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      flex: 1; position: relative;
+    }
+    .ps-step:not(:last-child)::after {
+      content: ''; position: absolute; top: 14px; left: calc(50% + 16px);
+      width: calc(100% - 32px); height: 1px;
+      background: rgba(255,255,255,0.12);
+    }
+    .ps-step.done:not(:last-child)::after { background: #00c9a7; }
+    .ps-circle {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.4);
+      background: transparent; transition: all 0.3s;
+      position: relative; z-index: 1;
+    }
+    .ps-step.active .ps-circle { border-color: #00c9a7; color: #00c9a7; background: rgba(0,201,167,0.1); }
+    .ps-step.done   .ps-circle { border-color: #00c9a7; color: #0a0a0a; background: #00c9a7; }
+    .ps-label { font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.35); white-space: nowrap; }
+    .ps-step.active .ps-label,
+    .ps-step.done   .ps-label { color: rgba(255,255,255,0.65); }
+
+    /* ── Auth container in topbar ── */
+    #authContainer { display: flex; align-items: center; }
+
+    /* ── Page transition curtain ── */
+    .transition-curtain {
+      position: fixed; inset: 0; background: #0a0a0a; z-index: 9999;
+      pointer-events: none; opacity: 0; transition: opacity 0.45s ease;
+    }
+    .transition-curtain.active { opacity: 1; pointer-events: all; }
+
+    /* ── Planner section: no top padding needed (topbar handles it) ── */
+    .planner-section { padding-top: 40px; }
+
+    @media (max-width: 600px) {
+      .planner-topbar { padding: 0 16px; }
+      .planner-hero-banner { padding: 44px 20px 36px; }
+      .planner-steps { padding: 20px 20px 0; }
+    }
+    .page-curtain {
+      position: fixed; inset: 0; background: #0a0a0a; z-index: 10000;
+      transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1);
+    }
+    .page-curtain.lifted { transform: translateY(-100%); pointer-events: none; }
+    
+    /* 1. Base positioning - Ensure these are clean */
+    .cursor-dot, .cursor-ring {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    #cursorDot {
+      width: 10px;
+      height: 10px;
+      background: #00c9a7;
+      border-radius: 50%;
+    }
+
+    #cursorRing {
+      width: 44px;
+      height: 44px;
+      border: 1.5px solid rgba(0, 201, 167, 0.5);
+      border-radius: 50%;
+      /* Do not put transform or transition:transform here */
+    }
+
+    /* 2. Click State - ONLY change colors/bg here */
+    #cursorRing.clicked {
+      background: rgba(0, 201, 167, 0.1);
+      border-color: #00c9a7;
+      /* NO TRANSFORM HERE */
+    }
+
+    body:hover .cursor-dot,
+    body:hover .cursor-ring {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="cursorDot" class="cursor-dot"></div>
+  <div id="cursorRing" class="cursor-ring"></div>
+  <div class="transition-curtain" id="pageCurtain"></div>
+
+  <!-- ===== PLANNER TOP BAR ===== -->
+  <header class="planner-topbar">
+    <!-- Logo / home link -->
+    <a href="index.html" class="ptb-logo go-home">
+      <svg viewBox="0 0 60 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M30 6 L54 44 H6 Z" stroke="white" stroke-width="1.5" fill="none"/>
+        <path d="M17 34 L30 16 L43 34" stroke="white" stroke-width="1" fill="none" opacity="0.55"/>
+        <circle cx="30" cy="47" r="1.2" fill="white" opacity="0.6"/>
+      </svg>
+      <div>
+        <div class="ptb-brand">Tripify</div>
+        <div class="ptb-sub">Sri Lanka</div>
+      </div>
+    </a>
+
+    <!-- Right: auth + back button -->
+    <div class="ptb-right">
+      <div id="authContainer"></div>
+      <a href="index.html" class="ptb-back go-home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+        Back to Home
+      </a>
+    </div>
+  </header>
+
+  <!-- ===== PAGE CONTENT WRAPPER ===== -->
+  <div class="planner-page-wrap">
+
+    <!-- ── Hero banner ── -->
+    <div class="planner-hero-banner">
+      <div class="phb-badge"><span class="phb-dot"></span> Powered by Route Intelligence</div>
+      <h1 class="phb-title">Plan Your <em>Multi-Stop Journey ✦</em></h1>
+      <p class="phb-sub">Fill in your details → AI calculates the optimal route, estimates traffic-aware travel times, and curates restaurants, hotels &amp; attractions in LKR.</p>
+    </div>
+
+    <!-- ── Steps ── -->
+    <div class="planner-steps" id="plannerSteps">
+      <div class="ps-step active" id="step1">
+        <div class="ps-circle">1</div>
+        <div class="ps-label">Trip Details</div>
+      </div>
+      <div class="ps-step" id="step2">
+        <div class="ps-circle">2</div>
+        <div class="ps-label">Plan Route</div>
+      </div>
+      <div class="ps-step" id="step3">
+        <div class="ps-circle">3</div>
+        <div class="ps-label">Your Results</div>
+      </div>
+    </div>
+
+    <!-- ===== PLANNER FORM ===== -->
+    <section class="planner-section" id="planner">
+      <div class="planner-grid">
+
+        <!-- Left: map outline + intro -->
+        <div class="planner-left reveal-left">
+          <div class="sl-map">
+            <svg viewBox="0 0 120 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M60 10 C74 13 85 25 88 40 C91 55 88 70 83 85 C78 100 71 111 69 126 C67 141 70 156 65 168 C60 180 52 188 47 193 C43 196 40 194 43 189 C46 184 52 175 56 164 C60 153 62 140 59 126 C56 112 50 100 48 86 C46 72 47 58 52 44 C57 30 64 18 60 10 Z"
+                stroke="rgba(255,255,255,0.45)" stroke-width="1.5" fill="rgba(255,255,255,0.05)"/>
+            </svg>
+          </div>
+          <div class="planner-intro">
+            <div class="pl-badge">Powered Route Intelligence</div>
+            <h2 class="planner-title">Your Journey<br/><em>Starts Here ✦</em></h2>
+            <p class="planner-desc">Fill in your details → AI calculates the optimal route, estimates traffic-aware travel times, and curates restaurants, hotels &amp; attractions in LKR.</p>
+          </div>
+        </div>
+
+        <!-- Right: form -->
+        <div class="planner-right reveal-right">
+          <form class="trip-form" id="tripForm" novalidate>
+
+            <div class="form-group">
+              <label class="form-label" for="startLocation"><span class="ld green"></span> Start Location</label>
+              <div class="input-wrap">
+                <input type="text" id="startLocation" class="form-input" placeholder="e.g. Colombo, Negombo…" list="citySuggestions" required />
+                <span class="input-icon"></span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="mainDestination"><span class="ld red"></span> Main Destination</label>
+              <div class="input-wrap">
+                <input type="text" id="mainDestination" class="form-input" placeholder="e.g. Ella, Galle…" list="citySuggestions" required />
+                <span class="input-icon"></span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label"><span class="ld blue"></span> Optional Stops <span class="lhint">drag to reorder</span></label>
+              <div id="stopsContainer" class="stops-container"></div>
+              <button type="button" class="btn-add-stop" id="addStopBtn">+ Add a Stop</button>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="numTravelers">Travelers</label>
+                <div class="input-wrap">
+                  <input type="number" id="numTravelers" class="form-input" min="1" max="50" value="2" required />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="travelMode">Travel Mode</label>
+                <select id="travelMode" class="form-input form-select">
+                  <option value="car">🚗 Car</option>
+                  <option value="bike">🏍️ Motorbike</option>
+                  <option value="bus">🚌 Bus</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="totalBudget">Total Budget <span class="lamber">(LKR)</span></label>
+              <div class="input-wrap">
+                <input type="number" id="totalBudget" class="form-input" min="1000" value="15000" required />
+                <span class="input-suffix">Rs.</span>
+              </div>
+              <input type="range" id="budgetSlider" class="budget-slider" min="5000" max="500000" step="1000" value="15000" />
+              <div class="slider-labels"><span>Rs. 5,000</span><span>Rs. 5,00,000</span></div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="travelDate">Travel Date</label>
+              <div class="input-wrap">
+                <input type="date" id="travelDate" class="form-input" />
+              </div>
+            </div>
+
+            <button type="submit" class="btn-plan" id="planBtn">
+              <span class="btn-text"  id="btnText">Plan My Journey ✦</span>
+              <span class="btn-loader hidden" id="btnLoader"><span class="spinner"></span> Calculating</span>
+            </button>
+
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;">
+              <button type="button" class="btn-reset" id="resetTripBtn">Reset Trip</button>
+              <button type="button" class="btn-alt"   id="altRoutesBtn" style="display:none">⇄ Alternative Routes</button>
+              <button type="button" class="btn-alt"   id="inlineSaveBtn" style="display:none">💾 Save Trip</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== RESULTS ===== -->
+    <section class="results-section" id="results" style="display:none">
+      <div class="results-header">
+        <div class="res-eyebrow">✦ AI Trip Summary</div>
+        <h2 class="results-title">Your Optimised <em>Sri Lanka Journey</em></h2>
+        <p class="results-sub" id="resultsSub">Your optimal multi-stop route with smart recommendations</p>
+      </div>
+
+      <div class="results-body">
+        <div class="results-col-wide">
+          <h3 class="sec-heading">📍 Route Timeline</h3>
+          <div class="timeline" id="routeTimeline"></div>
+          <div class="map-wrap">
+            <div id="map" class="map-canvas"></div>
+            <div class="map-placeholder" id="mapOverlay">
+              <div class="mp-icon"></div>
+              <h3>Your Route Appears Here</h3>
+              <p>Enter trip details and click <strong>Plan My Journey</strong> to see your live route.</p>
+              <div class="mp-tags">
+                <span>All stops</span><span>Optimized route</span><span>Hotels</span><span>Restaurants</span>
+              </div>
+            </div>
+            <div class="map-infobar" id="mapInfoBar" style="display:none">
+              <div class="mib-item"><span>📏</span><span class="mib-lbl">Distance</span><strong id="totalDistance"></strong></div>
+              <div class="mib-item"><span>⌚</span><span class="mib-lbl">Travel Time</span><strong id="totalTime"></strong></div>
+              <div class="mib-item"><span>📍</span><span class="mib-lbl">Stops</span><strong id="totalStops"></strong></div>
+              <div class="mib-item"><span>💵</span><span class="mib-lbl">Est. Cost</span><strong id="totalCost"></strong></div>
+            </div>
+            <a id="openGmapsBtn" class="open-gmaps-btn" href="#" target="_blank" style="display:none">🗺️ Open in Google Maps</a>
+          </div>
+        </div>
+        <div class="results-col">
+          <h3 class="sec-heading">Budget Breakdown <span class="ai-badge">AI Calculated</span></h3>
+          <div class="budget-grid" id="budgetGrid"></div>
+        </div>
+      </div>
+
+      <div class="reco-block">
+        <h3 class="sec-heading">Restaurant Recommendations <span class="ai-badge">AI Curated</span></h3>
+        <p class="sec-sub">Top restaurants along your route, filtered by budget &amp; ratings</p>
+        <div class="reco-grid" id="restaurantGrid"></div>
+      </div>
+
+      <div class="reco-block">
+        <h3 class="sec-heading">Hotel Recommendations <span class="ai-badge">AI Curated</span></h3>
+        <p class="sec-sub">Best-value stays along your route within your budget</p>
+        <div class="reco-grid" id="hotelGrid"></div>
+      </div>
+
+      <div class="reco-block">
+        <h3 class="sec-heading">Places to Visit <span class="ai-badge">AI Curated</span></h3>
+        <p class="sec-sub">Top attractions — waterfalls, forests, wildlife, temples &amp; more</p>
+        <div class="attraction-filters" id="attractionFilters">
+          <button class="af-pill active" data-cat="all">All</button>
+          <button class="af-pill" data-cat="waterfall">Waterfalls</button>
+          <button class="af-pill" data-cat="forest">Forests</button>
+          <button class="af-pill" data-cat="wildlife">Wildlife</button>
+          <button class="af-pill" data-cat="heritage">Heritage</button>
+          <button class="af-pill" data-cat="temple">Temples</button>
+          <button class="af-pill" data-cat="beach">Beaches</button>
+          <button class="af-pill" data-cat="viewpoint">Viewpoints</button>
+          <button class="af-pill" data-cat="activity">Activities</button>
+        </div>
+        <div class="reco-grid attractions-grid" id="attractionsGrid"></div>
+      </div>
+
+      <div class="savings-banner" id="savingsBanner" style="display:none">
+        <span class="sb-icon"></span>
+        <div><strong class="sb-title">AI Savings Tip</strong><p class="sb-text" id="savingsText"></p></div>
+      </div>
+    </section>
+
+  </div><!-- /planner-page-wrap -->
+
+  <!-- Trips side panel (Firebase) -->
+  <div class="trips-panel-overlay" id="tripsPanelOverlay"></div>
+  <aside class="trips-panel" id="tripsPanel">
+    <div class="trips-panel-head">
+      <div>
+        <div class="trips-panel-eyebrow">MY COLLECTION</div>
+        <h3 class="trips-panel-title">My Saved Trips</h3>
+      </div>
+      <button class="trips-panel-close" id="closeTripsPanelBtn">✕</button>
+    </div>
+    <div class="trips-list" id="tripsList"></div>
+  </aside>
+
+  <datalist id="citySuggestions"></datalist>
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+
+  <!-- Leaflet -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
+
+  <!-- App scripts -->
+  <script src="locations.js"></script>
+  <script src="app.js"></script>
+  <script src="auth.js"></script>
+  <script src="gallery.js"></script>
+
+  <script>
+    // ── Google Maps ──────────────────────────────────────
+    window.GMAPS_KEY = 'AIzaSyCzcgTVfVPxYug-MBTLtLF1eSbtjFcMzrM';
+    window.gm_authFailure = function() {
+      console.warn('Google Maps auth failed — falling back to Leaflet/OpenStreetMap');
+      window.googleMapsLoaded = false; window.GMAPS_KEY = null;
+      if (window.initLeafletMap) window.initLeafletMap();
+      if (window.showToast) window.showToast('Google Maps quota reached — using OpenStreetMap instead', 'error');
+    };
+    window.onGoogleMapsReady = function() {
+      window.googleMapsLoaded = true;
+      if (window.initGoogleMap) window.initGoogleMap();
+    };
+    if (window.GMAPS_KEY && window.GMAPS_KEY !== 'YOUR_API_KEY') {
+      var s = document.createElement('script');
+      s.src = 'https://maps.googleapis.com/maps/api/js?key=' + window.GMAPS_KEY + '&libraries=places,geometry&callback=onGoogleMapsReady';
+      s.async = true; s.defer = true;
+      s.onerror = function() { window.GMAPS_KEY = null; if (window.initLeafletMap) window.initLeafletMap(); };
+      document.head.appendChild(s);
+    } else {
+      window.GMAPS_KEY = null;
+      document.addEventListener('DOMContentLoaded', function() { if (window.initLeafletMap) window.initLeafletMap(); });
+    }
+
+    // ── Page-load curtain lift ───────────────────────────
+    window.addEventListener('load', () => {
+      const c = document.getElementById('pageCurtain');
+      if (c) setTimeout(() => c.classList.add('lifted'), 80);
+    });
+
+    // ── Back-to-home transition ──────────────────────────
+    function goHome(e) {
+      e.preventDefault();
+      const curtain = document.getElementById('pageCurtain'); // Changed from transitionCurtain
+      curtain.classList.remove('lifted'); // Use your existing CSS class to bring it back down
+      setTimeout(() => { window.location.href = 'index.html'; }, 500);
+    }
+    document.querySelectorAll('.go-home').forEach(el => el.addEventListener('click', goHome));
+
+    // ── Step indicator update (called by app.js) ─────────
+    window.setActiveStep = function(n) {
+      [1,2,3].forEach(i => {
+        const el = document.getElementById('step' + i);
+        if (!el) return;
+        el.classList.remove('active','done');
+        if (i < n)  el.classList.add('done');
+        if (i === n) el.classList.add('active');
+      });
+    };
+
+    // Hook into planBtn to advance steps
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('tripForm');
+      if (form) {
+        form.addEventListener('submit', () => window.setActiveStep(2));
+      }
+      // After results are shown, advance to step 3
+      const resultsSection = document.getElementById('results');
+      if (resultsSection) {
+        const observer = new MutationObserver(() => {
+          if (resultsSection.style.display !== 'none') window.setActiveStep(3);
+        });
+        observer.observe(resultsSection, { attributes: true, attributeFilter: ['style'] });
+      }
+    });
+  </script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<script src="firebase-config.js"></script>
+
+<script src="locations.js"></script>
+<script src="auth.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
